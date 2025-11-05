@@ -61,10 +61,11 @@
     font-size: 19px;
 }
 
-.forgot-password{
-    padding-left: 62px;
+.forgot-password {
+    display: flex;
+    justify-content: center;
     margin-top: 27px;
-    color:#797979;
+    color: #797979;
     font-size: 18px;
 }
 
@@ -91,4 +92,9 @@
     font-size: 19px;
     font-weight: 700;
     cursor: pointer;
+}
+
+.gray{
+    background: #EAEAEA;
+    color: #676767;
 }
