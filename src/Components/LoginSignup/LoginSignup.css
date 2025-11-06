@@ -21,6 +21,8 @@
     color: #3c009d;
     font-size: 48px;
     font-weight: 700;
+    display: inline;
+    
 }
 
 .underline{
@@ -69,7 +71,7 @@
     font-size: 18px;
 }
 
-.forgot-password span{
+.forgot-password a{
     color: #4c00b4;
     cursor: pointer;
 }
