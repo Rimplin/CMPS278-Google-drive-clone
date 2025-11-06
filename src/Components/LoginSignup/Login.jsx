@@ -29,12 +29,15 @@ export const Login = () => {
             <input type="password" placeholder='Password' />
           </div>
         </div>
-  
-        <div className="forgot-password"><a href='https://www.google.com'>Forgot password?</a></div>
-  
+
         <div className="submit-container">
           <button type="submit" className='submit'>Submit</button>
         </div>
+  
+        <div className="forgot-password"><a href='https://www.google.com'>Forgot password?</a></div>
+  
+        <p>Not a member yet? Click <a>here</a> to sign up</p>
+
       </div>
     )
   }

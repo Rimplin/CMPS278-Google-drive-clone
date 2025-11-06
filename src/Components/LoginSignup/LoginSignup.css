@@ -22,7 +22,7 @@
     font-size: 48px;
     font-weight: 700;
     display: inline;
-    
+
 }
 
 .underline{
@@ -66,9 +66,8 @@
 .forgot-password {
     display: flex;
     justify-content: center;
-    margin-top: 27px;
     color: #797979;
-    font-size: 18px;
+    font-size: 15px;
 }
 
 .forgot-password a{
@@ -79,7 +78,7 @@
 .submit-container{
     display: flex;
     gap: 30px;
-    margin: 60px auto;
+    margin: 35px auto;
 }
 
 .submit{
@@ -96,7 +95,13 @@
     cursor: pointer;
 }
 
-.gray{
+.container p{
+    text-align: left;
+    margin-left: 60px;
+    margin-top: 30px;
+}
+
+/* .gray{
     background: #EAEAEA;
     color: #676767;
-}
+} */
