@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import './LoginSignup.css'
+import { Link } from "react-router-dom";
 
 import user_icon from '../../assets/person.png'
 import email_icon from '../../assets/email.png'
@@ -7,7 +8,6 @@ import password_icon from '../../assets/password.png'
 
 export const Signup = () => {
 
-  // const [action, setAction] = useState("Sign Up");
 
   return (
     <div className='container'>
@@ -46,7 +46,7 @@ export const Signup = () => {
         <button type="submit" className='submit'>Submit</button>
       </div>
 
-      <span>Already have an account? <a href='https://www.google.com'>Sign in</a></span>
+      <span>Already have an account? <Link to="/login">Sign in</Link></span>
 
       {/* <div className="submit-container">
         <div className={action === "Login" ? "submit gray" : "submit"} onClick={() =>{setAction("Sign Up")}}>Sign Up</div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import './LoginSignup.css'
+import { Link } from "react-router-dom";
 
 import email_icon from '../../assets/email.png'
 import password_icon from '../../assets/password.png'
@@ -36,7 +37,8 @@ export const Login = () => {
   
         <div className="forgot-password"><a href='https://www.google.com'>Forgot password?</a></div>
   
-        <p>Not a member yet? Click <a>here</a> to sign up</p>
+        <p>Not a member yet? Click <Link to="/signup">here</Link> to sign up</p>
+        //"localhost://5000/api/signup"
 
       </div>
     )
