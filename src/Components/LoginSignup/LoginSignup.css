@@ -105,3 +105,8 @@
     background: #EAEAEA;
     color: #676767;
 } */
+
+/* in LoginSignup.css */
+.notice { margin-top: 8px; font-size: 0.95rem; }
+.notice.success { color: #1a7f37; }
+.notice.error { color: #b3261e; }
