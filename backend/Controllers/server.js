@@ -4,11 +4,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import User from './User.js';
+import User from '../Models/User.js';
 import jwt from "jsonwebtoken";
-
-
-
+import fileActionsRouter from './router.js';
 dotenv.config();
 
 const app = express();
@@ -117,7 +115,7 @@ app.post(`${API}/login`, async (req, res, next) => {
     }
 });
 
-
+app.use(API, fileActionsRouter);
 
 // --- 404 for API routes ---
 app.use(API, (_req, res) => {
