@@ -291,7 +291,7 @@ app.get(`${API}/files/:id/children`, authRequired, async (req, res) => {
                 }
             ]
         })
-        .sort({ isFolder: -1, name: -1})
+        .sort({ isFolder: -1, name: 1})
         .lean();
 
         res.json(children);
