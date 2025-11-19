@@ -228,6 +228,33 @@ app.get(`${API}/files/recent`, authRequired, async (req, res) => {
     }
 });
 
+app.get(`${API}/files/:id`, authRequired, async (req, res) => {
+    try{
+        const fileId = req.params.id;
+        const userId = req.user.sub;
+        const userEmail = req.user.email;
+
+        const file = await File.findById(fileId).lean();
+
+        if(!file){
+            return res.status(404).json({ error: "File not found"});
+        }
+
+        const isOwner = file.owner?.toString() === userId;
+        const isShared = file.sharedWith?.includes(userEmail);
+
+        if(!isOwner && !isShared){
+            return res.status(404).json({ error: "File not accessible" });
+        }
+
+        res.json(file);
+    }
+    catch(err){
+        console.error("GET /api/files/:id error:", err);
+        res.status(500).json({ error: "Server error"});
+    }
+})
+
 app.use(API, fileActionsRouter);
 
 // --- 404 for API routes ---
