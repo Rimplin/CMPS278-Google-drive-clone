@@ -206,7 +206,7 @@ app.get(`${API}/files`, authRequired, async (req, res) => {
     catch(err){
         console.error("GET /api/files error:", err);
     }
-})
+});
 
 app.get(`${API}/files/recent`, authRequired, async (req, res) => {
     try{
@@ -253,7 +253,54 @@ app.get(`${API}/files/:id`, authRequired, async (req, res) => {
         console.error("GET /api/files/:id error:", err);
         res.status(500).json({ error: "Server error"});
     }
-})
+});
+
+app.get(`${API}/files/:id/children`, authRequired, async (req, res) => {
+    try{
+        const folderId = req.params.id;
+        const userId = req.user.sub;
+        const userEmail = req.user.email;
+
+        const folder = await File.findById(folderId).lean();
+
+        if(!folder){
+            return res.status(404).json({ error: "Folder not found"});
+        }
+
+        if(!folder.isFolder){
+            return res.status(400).json({ error: "This file is not a folder"});
+        }
+
+        const isOwner = folder.owner?.toString() === userId;
+        const isShared = folder.sharedWith?.includes(userEmail);
+
+        if(!isOwner && !isShared){
+            return res.status(404).json({ error: "Folder not accessible"});
+        }
+
+        const childLocation = `${folder.location}/${folder.name}`;
+
+        const children = await File.find({
+            location: childLocation,
+            $or: [
+                {
+                    owner: userId
+                },
+                {
+                    sharedWith: userEmail
+                }
+            ]
+        })
+        .sort({ isFolder: -1, name: -1})
+        .lean();
+
+        res.json(children);
+    }
+    catch(err){
+        console.error("GET /api/files/:id/children error:", err);
+        res.status(500).json({ error: "Server error"});
+    }
+});
 
 app.use(API, fileActionsRouter);
 
