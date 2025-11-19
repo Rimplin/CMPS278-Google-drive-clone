@@ -130,6 +130,12 @@ app.get(`${API}/me`, authRequired, async (req, res) => {
         const avatarInitial = user.name?.charAt(0)?.toUpperCase() || "?";
 
         const storageUsed = 0;
+        /*  For future storage tracking, try:
+            const storageUsed = await File.aggregate([
+            { $match: { owner: userId } },
+            { $group: { _id: null, total: { $sum: "$size" } } }
+            ]);
+        */
         const storageTotal = 15; // GB (mock)
 
         res.json({
@@ -148,10 +154,10 @@ app.get(`${API}/me`, authRequired, async (req, res) => {
 });
 
 app.get(`${API}/files`, authRequired, async (req, res) => {
-    try{
+    try {
         const userId = req.user.sub;
 
-        const{
+        const {
             scope,
             search,
             type,
@@ -164,22 +170,22 @@ app.get(`${API}/files`, authRequired, async (req, res) => {
 
         const query = {};
 
-        if(scope === "shared"){
-            query.shareWith = req.user.email;
+        if (scope === "shared") {
+            query.sharedWith = req.user.email;
         }
-        else if (scope === "starred"){
+        else if (scope === "starred") {
             query.isStarred = true;
             query.owner = userId;
         }
-        else{
+        else {
             query.owner = userId;
         }
 
-        if(search){
-            query.name = { $regex: search, $options: "i"};
+        if (search) {
+            query.name = { $regex: search, $options: "i" };
         }
 
-        if(type){
+        if (type) {
             query.type = type;
         }
 
@@ -203,79 +209,85 @@ app.get(`${API}/files`, authRequired, async (req, res) => {
         res.json(files);
     }
 
-    catch(err){
+    catch (err) {
         console.error("GET /api/files error:", err);
+        res.status(500).json({ error: "Server error" });
     }
 });
 
 app.get(`${API}/files/recent`, authRequired, async (req, res) => {
-    try{
+    try {
         const userId = req.user.sub;
         const { limit = 20 } = req.query;
 
-        const query = { owner: userId};
+        const query = { owner: userId };
 
         const files = await File.find(query)
-            .sort({ updatedAt: -1})
+            .sort({ updatedAt: -1 })
             .limit(Number(limit) || 20)
             .lean();
-        
+
         res.json(files);
     }
-    catch(err){
+    catch (err) {
         console.error("GET /api/files/recent error:", err);
-        res.status(500).json({ error: "Server error"});
+        res.status(500).json({ error: "Server error" });
     }
 });
 
 app.get(`${API}/files/:id`, authRequired, async (req, res) => {
-    try{
+    try {
         const fileId = req.params.id;
         const userId = req.user.sub;
         const userEmail = req.user.email;
 
         const file = await File.findById(fileId).lean();
 
-        if(!file){
-            return res.status(404).json({ error: "File not found"});
+        if (!file) {
+            return res.status(404).json({ error: "File not found" });
         }
 
         const isOwner = file.owner?.toString() === userId;
         const isShared = file.sharedWith?.includes(userEmail);
 
-        if(!isOwner && !isShared){
+        if (!isOwner && !isShared) {
             return res.status(404).json({ error: "File not accessible" });
         }
 
         res.json(file);
     }
-    catch(err){
+    catch (err) {
         console.error("GET /api/files/:id error:", err);
-        res.status(500).json({ error: "Server error"});
+        res.status(500).json({ error: "Server error" });
     }
 });
 
 app.get(`${API}/files/:id/children`, authRequired, async (req, res) => {
-    try{
+    try {
         const folderId = req.params.id;
         const userId = req.user.sub;
         const userEmail = req.user.email;
 
+        //used to avoid a cast error if someone sends a bad ID (like /api/files/234-invalid)
+        if(!mongoose.isValidObjectId(folderId)) {
+            return res.status(404).json({ error: "Invalid file ID"});
+        }        
+
         const folder = await File.findById(folderId).lean();
 
-        if(!folder){
-            return res.status(404).json({ error: "Folder not found"});
+        if (!folder) {
+            return res.status(404).json({ error: "Folder not found" });
         }
 
-        if(!folder.isFolder){
-            return res.status(400).json({ error: "This file is not a folder"});
+        if (!folder.isFolder) {
+            return res.status(400).json({ error: "This file is not a folder" });
         }
 
         const isOwner = folder.owner?.toString() === userId;
         const isShared = folder.sharedWith?.includes(userEmail);
 
-        if(!isOwner && !isShared){
-            return res.status(404).json({ error: "Folder not accessible"});
+        if (!isOwner && !isShared) {
+            return res.status(404).json({ error: "Folder not accessible" });
         }
 
         const childLocation = `${folder.location}/${folder.name}`;
@@ -291,14 +303,14 @@ app.get(`${API}/files/:id/children`, authRequired, async (req, res) => {
                 }
             ]
         })
-        .sort({ isFolder: -1, name: 1})
-        .lean();
+            .sort({ isFolder: -1, name: 1 })
+            .lean();
 
         res.json(children);
     }
-    catch(err){
+    catch (err) {
         console.error("GET /api/files/:id/children error:", err);
-        res.status(500).json({ error: "Server error"});
+        res.status(500).json({ error: "Server error" });
     }
 });
 
