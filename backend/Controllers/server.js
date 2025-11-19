@@ -147,6 +147,67 @@ app.get(`${API}/me`, authRequired, async (req, res) => {
 
 });
 
+app.get(`${API}/files`, authRequired, async (req, res) => {
+    try{
+        const userId = req.user.sub;
+
+        const{
+            scope,
+            search,
+            type,
+            fileType,
+            owner,
+            location,
+            sort = "createdAt",
+            order = "desc"
+        } = req.query;
+
+        const query = {};
+
+        if(scope === "shared"){
+            query.shareWith = req.user.email;
+        }
+        else if (scope === "starred"){
+            query.isStarred = true;
+            query.owner = userId;
+        }
+        else{
+            query.owner = userId;
+        }
+
+        if(search){
+            query.name = { $regex: search, $options: "i"};
+        }
+
+        if(type){
+            query.type = type;
+        }
+
+        if (fileType) {
+            query.type = fileType;
+        }
+
+        if (owner) {
+            query.owner = owner;
+        }
+
+        if (location) {
+            query.location = location;
+        }
+
+        const sortQuery = {};
+        sortQuery[sort] = order === "asc" ? 1 : -1;
+
+        const files = await File.find(query).sort(sortQuery).lean();
+
+        res.json(files);
+    }
+
+    catch(err){
+        console.error("GET /api/files error:", err);
+    }
+})
+
 
 app.use(API, fileActionsRouter);
 
