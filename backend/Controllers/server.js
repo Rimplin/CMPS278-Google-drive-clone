@@ -208,6 +208,25 @@ app.get(`${API}/files`, authRequired, async (req, res) => {
     }
 })
 
+app.get(`${API}/files/recent`, authRequired, async (req, res) => {
+    try{
+        const userId = req.user.sub;
+        const { limit = 20 } = req.query;
+
+        const query = { owner: userId};
+
+        const files = await File.find(query)
+            .sort({ updatedAt: -1})
+            .limit(Number(limit) || 20)
+            .lean();
+        
+        res.json(files);
+    }
+    catch(err){
+        console.error("GET /api/files/recent error:", err);
+        res.status(500).json({ error: "Server error"});
+    }
+});
 
 app.use(API, fileActionsRouter);
 
