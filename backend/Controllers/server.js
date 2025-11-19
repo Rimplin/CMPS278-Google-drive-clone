@@ -7,6 +7,9 @@ import bcrypt from 'bcryptjs';
 import User from '../Models/User.js';
 import jwt from "jsonwebtoken";
 import fileActionsRouter from './router.js';
+import authRequired from '../Helpers/authRequired.js';
+import File from '../Models/File.js'
+
 dotenv.config();
 
 const app = express();
@@ -63,7 +66,7 @@ app.post(`${API}/signup`, async (req, res, next) => {
         const user = await User.create({
             email: email,
             name: name,
-            passwordHash : passwordHash
+            passwordHash: passwordHash
         });
 
         res.status(201).json({
@@ -114,6 +117,36 @@ app.post(`${API}/login`, async (req, res, next) => {
         next(err);
     }
 });
+
+app.get(`${API}/me`, authRequired, async (req, res) => {
+    try {
+        const userId = req.user.sub;
+
+        const user = await User.findById(userId).exec();
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const avatarInitial = user.name?.charAt(0)?.toUpperCase() || "?";
+
+        const storageUsed = 0;
+        const storageTotal = 15; // GB (mock)
+
+        res.json({
+            username: user.name,
+            email: user.email,
+            avatarInitial,
+            storageUsed,
+            storageTotal
+        });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+
+});
+
 
 app.use(API, fileActionsRouter);
 
