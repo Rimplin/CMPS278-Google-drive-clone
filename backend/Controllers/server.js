@@ -29,7 +29,7 @@ async function connectDB() {
     try {
         await mongoose.connect(MONGODB_URI, {
             // keep options minimal; mongoose v7+ picks sane defaults
-            // dbName can be set in URI or here
+            dbName: "google-drive-clone"
         });
         console.log('✓ MongoDB connected');
     } catch (err) {
