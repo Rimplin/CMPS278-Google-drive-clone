@@ -13,7 +13,18 @@ import File from '../Models/File.js'
 dotenv.config();
 
 const app = express();
-app.use(express.json());
+/* Debugging middleware.
+This middleware runs for every incoming request, before the actual route handler.*/
+app.use(express.json()); // needed to read JSON bodies
+app.use((req, res, next) => {
+  console.log("METHOD:", req.method);
+  console.log("PATH:", req.path);
+  console.log("HEADERS:", req.headers);
+  console.log("QUERY:", req.query);
+  console.log("BODY:", req.body);
+  console.log("------------------------------------------------");
+  next();
+});
 app.use(cors({ origin: true, credentials: true }));
 
 const PORT = process.env.PORT || 5000;
@@ -38,7 +49,6 @@ async function connectDB() {
     }
 }
 
-// --- Health check ---
 app.get(`${API}/health`, (_req, res) => {
     const dbState = mongoose.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
     res.json({
@@ -49,7 +59,6 @@ app.get(`${API}/health`, (_req, res) => {
     });
 });
 
-// --- Your routes go here ---
 // POST /api/signup  { email, name, password }
 app.post(`${API}/signup`, async (req, res, next) => {
     try {
@@ -316,25 +325,24 @@ app.get(`${API}/files/:id/children`, authRequired, async (req, res) => {
 
 app.use(API, fileActionsRouter);
 
-// --- 404 for API routes ---
+// 404 for API routes
 app.use(API, (_req, res) => {
     res.status(404).json({ error: 'Not found' });
 });
 
-// --- Centralized error handler (must have 4 args) ---
+// Centralized error handler (must have 4 args)
 app.use((err, _req, res, _next) => {
     console.error(err);
     res.status(err.status || 500).json({ error: err.message || 'Server error' });
 });
 
-// --- Start server AFTER DB connects ---
+// Start server AFTER DB connects
 connectDB().then(() => {
     app.listen(PORT, () => {
         console.log(`API ready on http://localhost:${PORT}`);
     });
 });
 
-// --- Graceful shutdown ---
 ['SIGINT', 'SIGTERM'].forEach(sig => {
     process.on(sig, async () => {
         console.log(`\n${sig} received: closing server and Mongo connection…`);
