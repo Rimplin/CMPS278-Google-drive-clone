@@ -28,7 +28,7 @@ app.use((req, res, next) => {
 app.use(cors({ origin: true, credentials: true }));
 
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = "mongodb+srv://jadhaddad163231:AEhN1zj1CwdaLryn@mongocluster0.qhp82.mongodb.net/# local";
 const API = '/api';
 mongoose.set('strictQuery', true); //mongo connection
 
@@ -110,7 +110,7 @@ app.post(`${API}/login`, async (req, res, next) => {
 
         const token = jwt.sign(
             { sub: user._id.toString(), email: user.email, name: user.name },
-            process.env.JWT_SECRET,
+            "jwt-test-secret",
             { expiresIn: '1h' }
         );
 

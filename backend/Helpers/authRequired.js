@@ -10,7 +10,7 @@ export default function authRequired(req, res, next) {
     const token = authHeader.slice(7); // remove "Bearer "
 
     try {
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        const payload = jwt.verify(token, "jwt-test-secret");
         // attach user info to request so endpoints can use it
         req.user = payload;
         next();
