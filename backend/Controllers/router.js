@@ -1,9 +1,179 @@
+// router.js
 import express from 'express';
 import mongoose from 'mongoose';
 import authRequired from '../Helpers/authRequired.js';
 import File from '../Models/File.js';
 
 const router = express.Router();
+
+// Create a new file or folder (metadata only)
+router.post('/files', authRequired, async (req, res, next) => {
+    try {
+        const userId = req.user.sub;
+        const userEmail = req.user.email;
+        const userName = req.user.name;
+
+        const {
+            name,
+            type,              // required for non-folders: 'doc' | 'sheet' | 'text' | 'zip' | 'pdf' | 'video'
+            isFolder = false,
+            location = 'My Drive',
+            size = 0,
+            description = '',
+            contentPreview = ''
+        } = req.body || {};
+
+        if (!name || typeof name !== 'string') {
+            return res.status(400).json({ error: 'name is required' });
+        }
+
+        // For non-folder items, we expect a valid type
+        const allowedTypes = ['doc', 'sheet', 'text', 'zip', 'pdf', 'video'];
+        if (!isFolder) {
+            if (!type || typeof type !== 'string') {
+                return res.status(400).json({ error: 'type is required for non-folder items' });
+            }
+            if (!allowedTypes.includes(type)) {
+                return res.status(400).json({
+                    error: `type must be one of: ${allowedTypes.join(', ')}`
+                });
+            }
+        }
+
+        const file = await File.create({
+            name: name.trim(),
+            type: isFolder ? 'folder' : type,      // folder type is always "folder"
+            isFolder: Boolean(isFolder),
+            location: location?.trim() || 'My Drive',
+            size: Number(size) || 0,
+            owner: userId,
+            ownerName: userName?.trim() || 'Unknown',
+            ownerEmail: String(userEmail || '').toLowerCase().trim(),
+            isStarred: false,
+            sharedWith: [],
+            description: description || '',
+            contentPreview: contentPreview || ''
+        });
+
+        res.status(201).json(file.toObject());
+    } catch (err) {
+        next(err);
+    }
+});
+
+
+router.get(`/files`, authRequired, async (req, res) => {
+    try {
+        const userId = req.user.sub;
+        const userEmail = req.user.email;
+
+        const {
+            scope,          // "shared" | "starred" | undefined
+            search,         // text query (name or content)
+            type,           // doc | sheet | text | zip | pdf | video | folder
+            fileType,       // alias for type
+            owner,          // owner userId (as string)
+            ownerEmail,     // filter by ownerEmail
+            location,       // "My Drive", "Trash", etc.
+            kind,           // "file" | "folder" (spec 7a)
+            minSize,        // bytes
+            maxSize,        // bytes
+            uploadedAfter,  // ISO date string
+            uploadedBefore, // ISO date string
+            sort = "createdAt",  // "name" | "size" | "createdAt"
+            order = "desc"       // "asc" | "desc"
+        } = req.query;
+
+        const query = {};
+
+        // Scope:
+        // - shared: files where I'm in sharedWith
+        // - starred: my files with isStarred = true
+        // - default: my files
+        if (scope === "shared") {
+            query.sharedWith = userEmail;
+        } else if (scope === "starred") {
+            query.isStarred = true;
+            query.owner = userId;
+        } else {
+            query.owner = userId;
+        }
+
+        // Filter by location (My Drive, Trash, etc.)
+// If no location is provided, EXCLUDE Trash by default.
+        if (location) {
+            query.location = String(location).trim();
+        } else {
+            query.location = { $ne: 'Trash' };
+        }
+
+
+        // Files vs folders (spec #7a)
+        if (kind === "folder") {
+            query.isFolder = true;
+        } else if (kind === "file") {
+            query.isFolder = false;
+        }
+
+        // File type (doc, sheet, pdf, video, etc.) (spec #7b)
+        const effectiveType = type || fileType;
+        if (effectiveType) {
+            query.type = String(effectiveType).trim();
+        }
+
+        // Filter by owner (id) or ownerEmail (spec #7c: "files shared by specific people")
+        if (owner) {
+            query.owner = owner;
+        }
+        if (ownerEmail) {
+            query.ownerEmail = String(ownerEmail).toLowerCase().trim();
+        }
+
+        // Advanced filters: size range (bytes)
+        if (minSize || maxSize) {
+            query.size = {};
+            if (minSize) query.size.$gte = Number(minSize);
+            if (maxSize) query.size.$lte = Number(maxSize);
+        }
+
+        // Advanced filters: upload date range (createdAt)
+        if (uploadedAfter || uploadedBefore) {
+            query.createdAt = {};
+            if (uploadedAfter) query.createdAt.$gte = new Date(uploadedAfter);
+            if (uploadedBefore) query.createdAt.$lte = new Date(uploadedBefore);
+        }
+
+        // Search by name OR description OR contentPreview
+        if (search && String(search).trim().length > 0) {
+            const regex = new RegExp(String(search).trim(), "i");
+            query.$or = [
+                { name: regex },
+                { description: regex },
+                { contentPreview: regex }
+            ];
+        }
+
+        // Sorting: only allow a safe subset
+        const allowedSorts = new Set(["name", "size", "createdAt", "updatedAt"]);
+        let sortField = allowedSorts.has(sort) ? sort : "createdAt";
+
+        // Allow frontend to pass "uploadDate" and map it to createdAt (spec #15c)
+        if (sort === "uploadDate") {
+            sortField = "createdAt";
+        }
+
+        const sortQuery = {};
+        sortQuery[sortField] = order === "asc" ? 1 : -1;
+
+        const files = await File.find(query).sort(sortQuery).lean();
+        res.json(files);
+    }
+    catch (err) {
+        console.error("GET /api/files error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 
 // Update basic metadata for a single file
 router.patch('/files/:id', authRequired, async (req, res, next) => {

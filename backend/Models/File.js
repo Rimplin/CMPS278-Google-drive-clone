@@ -73,20 +73,34 @@ const fileSchema = new Schema(
             default: []
         },
 
-        // Optional description
+        // Optional description (shown in "View details" dialog)
         description: {
             type: String,
             default: ''
         },
+
+        // Optional preview/content used for "search by content"
+        // (for text docs, notes, etc.)
+        contentPreview: {
+            type: String,
+            default: ''
+        }
     },
     {
         timestamps: true // createdAt = "uploadedAt", updatedAt
     }
 );
 
-// Some useful indexes (optional but nice)
+// Some useful indexes
 fileSchema.index({ owner: 1, location: 1 });
 fileSchema.index({ isStarred: 1 });
 fileSchema.index({ sharedWith: 1 });
+
+// Simple text index to support content search
+fileSchema.index({
+    name: 'text',
+    description: 'text',
+    contentPreview: 'text'
+});
 
 export default mongoose.model('File', fileSchema);
